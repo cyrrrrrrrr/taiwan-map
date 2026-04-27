@@ -2,14 +2,24 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<title>台灣真實地圖（高精度）</title>
+<title>雙地圖（台灣）</title>
 
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <script src="https://unpkg.com/topojson-client@3"></script>
 
 <style>
-body { margin: 0; font-family: Arial; }
-svg { width: 100%; height: 100vh; }
+body {
+  margin: 0;
+  font-family: Arial;
+  display: flex;
+}
+
+/* 兩張地圖各佔一半 */
+svg {
+  width: 50%;
+  height: 100vh;
+  border: 1px solid #ccc;
+}
 
 .town {
   fill: #cfd8dc;
@@ -38,55 +48,70 @@ svg { width: 100%; height: 100vh; }
 <body>
 
 <div class="tooltip" id="tip"></div>
-<svg id="map"></svg>
+
+<!-- 🔥 兩個不同ID -->
+<svg id="map1"></svg>
+<svg id="map2"></svg>
 
 <script>
-const svg = d3.select("#map");
-const g = svg.append("g");
 const tip = document.getElementById("tip");
 
-/* 🔥 載入「真實台灣 TopoJSON」 */
-d3.json("https://cdn.jsdelivr.net/npm/taiwan-atlas/towns-10t.json").then(topology => {
+/* 🔥 共用畫地圖函式 */
+function drawMap(svgId) {
 
-  const geo = topojson.feature(
-    topology,
-    topology.objects.towns
-  );
+  const svg = d3.select(svgId);
+  const g = svg.append("g");
 
-  const projection = d3.geoMercator()
-    .center([121, 23.7])
-    .scale(8000)
-    .translate([window.innerWidth/2, window.innerHeight/2]);
+  d3.json("https://cdn.jsdelivr.net/npm/taiwan-atlas/towns-10t.json").then(topology => {
 
-  const path = d3.geoPath().projection(projection);
+    const geo = topojson.feature(
+      topology,
+      topology.objects.towns
+    );
 
-  g.selectAll("path")
-    .data(geo.features)
-    .enter()
-    .append("path")
-    .attr("class", "town")
-    .attr("d", path)
+    const width = window.innerWidth / 2;
+    const height = window.innerHeight;
 
-    /* hover */
-    .on("mousemove", (event, d) => {
-      const name = d.properties.COUNTYNAME + d.properties.TOWNNAME;
+    const projection = d3.geoMercator()
+      .center([121, 23.7])
+      .scale(8000)
+      .translate([width/2, height/2]);
 
-      tip.style.display = "block";
-      tip.innerHTML = name;
-      tip.style.left = event.pageX + 10 + "px";
-      tip.style.top = event.pageY + 10 + "px";
-    })
+    const path = d3.geoPath().projection(projection);
 
-    .on("mouseleave", () => {
-      tip.style.display = "none";
-    })
+    g.selectAll("path")
+      .data(geo.features)
+      .enter()
+      .append("path")
+      .attr("class", "town")
+      .attr("d", path)
 
-    /* click */
-    .on("click", (event, d) => {
-      alert(d.properties.COUNTYNAME + d.properties.TOWNNAME);
-    });
+      /* hover */
+      .on("mousemove", (event, d) => {
+        const name = d.properties.COUNTYNAME + d.properties.TOWNNAME;
 
-});
+        tip.style.display = "block";
+        tip.innerHTML = name;
+        tip.style.left = event.pageX + 10 + "px";
+        tip.style.top = event.pageY + 10 + "px";
+      })
+
+      .on("mouseleave", () => {
+        tip.style.display = "none";
+      })
+
+      /* click */
+      .on("click", (event, d) => {
+        alert(d.properties.COUNTYNAME + d.properties.TOWNNAME);
+      });
+
+  });
+}
+
+/* 🔥 畫兩張地圖 */
+drawMap("#map1");
+drawMap("#map2");
+
 </script>
 
 </body>
